@@ -1,11 +1,12 @@
 version: '3.1'
 services:
   postgres:
-    image: postgres:13-bullseye
+    image: postgres:latest
     restart: always
+    ports:
+      - 5435:5434
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST_AUTH_METHOD: 'trust'
     healthcheck:
       test: [ "CMD", "pg_isready", "-q", "-d", "django", "-U", "postgres" ]
       timeout: 45s
@@ -15,18 +16,18 @@ services:
     image: adminer:latest
     restart: always
     ports:
-      - 8080:8080
+      - 8078:8078
     depends_on:
       - postgres
   django:
     image: vicalmic/django-app:latest
     restart: always
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgres://postgres:postgres@postgres:5435/postgres
       DEBUG: ${DEBUG}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
     ports:
-      - 8000:8000
+      - 8001:8001
     depends_on:
       - postgres
   migrations:
@@ -34,7 +35,7 @@ services:
     image: vicalmic/django-app:latest
     command: python manage.py migrate
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgres://postgres:postgres@postgres:5435/postgres
     depends_on:
       - postgres
   users:
@@ -45,7 +46,7 @@ services:
       DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME}
       DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
       DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgres://postgres:postgres@postgres:5435/postgres
     depends_on:
       - postgres
       - migrations
